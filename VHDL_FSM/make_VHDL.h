@@ -6,5 +6,6 @@
 #include <string.h>
 
 void make_VHDL(FILE *VHDL, int num_states);
+void make_Testbench(FILE *TB, int num_states);
 
 #endif
