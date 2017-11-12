@@ -36,22 +36,18 @@ void case_State_Or_Wait(FILE *VHDL, int total_num_states, int state_num, char st
 	//wait is used as a bool to see if input is a state or wait state
 	char *when = (char *)calloc(30, (sizeof(char) * 30));
 	char *if_statement = (char *)calloc(70, (sizeof(char) * 70));
-	char *else_statement = (char *)calloc(45, (sizeof(char) * 45));
 
 	if (wait == 1) {
 
 		//when statement
-		strcat_s(when, 30, "\t\t\twhen ");
+		strcat_s(when, 30, "\t\t\t\twhen ");
 		strcat_s(when, 30, wait_states[state_num]);
 		strcat_s(when, 30, " =>\n");
 		fprintf(VHDL, when);
 		free(when);
 
-		//Z1 output
-		fprintf(VHDL, "\t\t\t\tZ1 <= '1';\n");
-
 		//State transition logic
-		strcat_s(if_statement, 70, "\t\t\t\tif (WAIT_SIG = '0') then\n\t\t\t\t\tNS <= ");
+		strcat_s(if_statement, 70, "\t\t\t\t\tif (WAIT_SIG = '0') then\n\t\t\t\t\t\tPS <= ");
 		if (state_num == total_num_states - 1) {
 			strcat_s(if_statement, 70, states[0]);
 		} else {
@@ -59,48 +55,33 @@ void case_State_Or_Wait(FILE *VHDL, int total_num_states, int state_num, char st
 		}
 
 		//Z2 output
-		strcat_s(if_statement, 70, "; Z2 <= '0';\n");
+		strcat_s(if_statement, 70, ";\n");
 		fprintf(VHDL, if_statement);
 		free(if_statement);
 
-		strcat_s(else_statement, 45, "\t\t\t\telse\n\t\t\t\t\tNS <= ");
-		strcat_s(else_statement, 45, wait_states[state_num]);
-		strcat_s(else_statement, 45, "; Z2 <= '1';\n");
-		fprintf(VHDL, else_statement);
-		free(else_statement);
-
 		//end if
-		fprintf(VHDL, "\t\t\t\tend if;\n");
+		fprintf(VHDL, "\t\t\t\t\tend if;\n");
 
 	} else {
 
 		//when statement
-		strcat_s(when, 30, "\t\t\twhen ");
+		strcat_s(when, 30, "\t\t\t\twhen ");
 		strcat_s(when, 30, states[state_num]);
 		strcat_s(when, 30, " =>\n");
 		fprintf(VHDL, when);
 		free(when);
 
-		//Z1 output
-		fprintf(VHDL, "\t\t\t\tZ1 <= '0';\n");
-
 		//State transition logic
-		strcat_s(if_statement, 70, "\t\t\t\tif (WAIT_SIG = '1') then\n\t\t\t\t\tNS <= ");
+		strcat_s(if_statement, 70, "\t\t\t\t\tif (WAIT_SIG = '1') then\n\t\t\t\t\t\tPS <= ");
 		strcat_s(if_statement, 70, wait_states[state_num]);
 
 		//Z2 output
-		strcat_s(if_statement, 70, "; Z2 <= '1';\n");
+		strcat_s(if_statement, 70, ";\n");
 		fprintf(VHDL, if_statement);
 		free(if_statement);
 
-		strcat_s(else_statement, 45, "\t\t\t\telse\n\t\t\t\t\tNS <= ");
-		strcat_s(else_statement, 45, states[state_num]);
-		strcat_s(else_statement, 45, "; Z2 <= '0';\n");
-		fprintf(VHDL, else_statement);
-		free(else_statement);
-
 		//end if
-		fprintf(VHDL, "\t\t\t\tend if;\n");
+		fprintf(VHDL, "\t\t\t\t\tend if;\n");
 	}
 }
 
@@ -114,7 +95,7 @@ void make_VHDL(FILE *VHDL, int num_states, int num_inputs, int num_outputs) {
 	fprintf(VHDL, "use ieee.std_logic_1164.all;\n\n");
 
 	//Find the length of the largest states binary representation (to find bundle size for Y output)
-	int num_bits = num_digits(convert_int_to_bin((num_states-1)*2));
+	int num_bits = num_digits(convert_int_to_bin((num_states*2)-1))-1;
 
 	//Entity description inputs
 	fprintf(VHDL, "entity my_fsm is\n\tport\n\t\t(\n\t\t\tWAIT_SIG, CLK, RESET : in std_logic;\n\n");
@@ -161,7 +142,7 @@ void make_VHDL(FILE *VHDL, int num_states, int num_inputs, int num_outputs) {
 	}
 
 	//Entity description outputs
-	fprintf(VHDL, "\t\t\tY : out std_logic_vector(%d downto 0);\n\t\t\tZ1, Z2 : out std_logic \n\t\t);\nend my_fsm;\n\n", num_bits);
+	fprintf(VHDL, "\t\t\tRD, WR : out std_logic_vector(31 downto 0);\n\t\t\tY : out std_logic_vector(%d downto 0)\n\t\t);\nend my_fsm;\n\n", num_bits);
 	
 	//Architecture start
 	fprintf(VHDL, "architecture fsm_arch of my_fsm is\n\ttype state_type is (");
@@ -199,11 +180,8 @@ void make_VHDL(FILE *VHDL, int num_states, int num_inputs, int num_outputs) {
 	//Architecture processes
 	//Sync process
 	fprintf(VHDL, "begin\n\tsync_proc : process(CLK, NS, RESET)\n\tbegin\n\t\tif (RESET = '1') then PS <= ST0;");
-	fprintf(VHDL, "\n\t\telsif (rising_edge(CLK)) then PS <= NS;\n\t\tend if;\n\tend process sync_proc;\n\n");
-
-	//Comb process start
-	fprintf(VHDL, "\tcomb_proc : process(PS, WAIT_SIG)\n\tbegin\n\t\tZ1 <= '0'; Z2 <= '0';\n\t\tcase PS is\n");
-
+	fprintf(VHDL, "\n\t\telsif (rising_edge(CLK)) then\n\t\t\tcase PS is\n");
+	
 	//Creates all of the transition conditions for each state. 
 	for (int i = 0; i < num_states; i++) {
 		case_State_Or_Wait(VHDL, num_states, i, states, wait_states, 0);
@@ -211,7 +189,9 @@ void make_VHDL(FILE *VHDL, int num_states, int num_inputs, int num_outputs) {
 	}
 
 	//When others statement and end of Comb process
-	fprintf(VHDL, "\t\t\twhen others =>\n\t\t\t\tZ1 <= '0'; Z2 <= '0'; NS <= ST0;\n\t\tend case;\n\tend process comb_proc;\n\n");
+	fprintf(VHDL, "\t\t\t\twhen others =>\n\t\t\t\t\t PS <= ST0;\n\t\t\tend case;");
+	//end if and Sync process
+	fprintf(VHDL, "\n\t\tend if;\n\tend process sync_proc;\n\n");
 	
 	//Y output based on current state
 	fprintf(VHDL, "\twith PS select\n\t\tY <=");
@@ -223,7 +203,7 @@ void make_VHDL(FILE *VHDL, int num_states, int num_inputs, int num_outputs) {
 
 			int binary_state = convert_int_to_bin(bin_state_num);
 			fprintf(VHDL, " \"");
-			for (int j = 0; j < (num_bits - num_digits(binary_state)); j++) {
+			for (int j = 0; j < (num_bits - num_digits(binary_state))+1; j++) {
 				fprintf(VHDL, "0");
 			}
 
@@ -239,7 +219,7 @@ void make_VHDL(FILE *VHDL, int num_states, int num_inputs, int num_outputs) {
 	
 	//Creates when others binary representation
 	fprintf(VHDL, " \"");
-	for (int i = 0; i < num_bits; i++) {
+	for (int i = 0; i < num_bits+1; i++) {
 		fprintf(VHDL, "0");
 	}
 
@@ -262,11 +242,11 @@ void make_Testbench(FILE *TB, int num_states, int num_inputs, int num_outputs) {
 	//Entity description
 	fprintf(TB, "entity my_fsm_tb is\nend my_fsm_tb;\n\n");
 
-	int num_bits = num_digits(convert_int_to_bin((num_states - 1) * 2));
+	int num_bits = num_digits(convert_int_to_bin((num_states * 2) - 1)) - 1;
 
 	//Architecture and Component initialisation
 	fprintf(TB, "architecture test of my_fsm_tb is\n\tcomponent my_fsm\n\t\tport\n\t\t(");
-	fprintf(TB, "\n\t\t\tWAIT_SIG, RESET, CLK : in std_logic;\n\t\t\tZ1, Z2 : out std_logic;\n\n");
+	fprintf(TB, "\n\t\t\tWAIT_SIG, RESET, CLK : in std_logic;\n\n");
 
 	char num_to_char[5]; //Temp store for num to char[]
 	char inputs[100][10];
@@ -322,8 +302,8 @@ void make_Testbench(FILE *TB, int num_states, int num_inputs, int num_outputs) {
 		free(output_state);
 	}
 
-	fprintf(TB, "\t\t\tY : out std_logic_vector(%d downto 0)\n\t\t);\n", num_bits);
-	fprintf(TB, "\tend component;\n\n\tsignal WAIT_SIG, RESET, CLK, Z1, Z2 : std_logic;\n\tsignal Y : std_logic_vector(%d downto 0);\n\tsignal ", num_bits);
+	fprintf(TB, "\t\t\tRD, WR : out std_logic_vector(31 downto 0);\n\t\t\tY : out std_logic_vector(%d downto 0)\n\t\t);\n", num_bits);
+	fprintf(TB, "\tend component;\n\n\tsignal WAIT_SIG, RESET, CLK : std_logic;\n\tsignal Y : std_logic_vector(%d downto 0);\n\tsignal ", num_bits);
 
 	for (int i = 0; i < num_inputs; i++) {
 		fprintf(TB, "%s, ", inputs[i]);
@@ -334,11 +314,11 @@ void make_Testbench(FILE *TB, int num_states, int num_inputs, int num_outputs) {
 			fprintf(TB, ", ");
 		}
 	}
-	fprintf(TB, " : std_logic_vector(31 downto 0);\n\n");
+	fprintf(TB, ", RD, WR : std_logic_vector(31 downto 0);\n\n");
 
 	//Architecture Processes
 	//Port map
-	fprintf(TB, "begin\n\tFSM : my_fsm port map (WAIT_SIG => WAIT_SIG, RESET => RESET, CLK => CLK, Z1 => Z1, Z2 => Z2, Y => Y, ");
+	fprintf(TB, "begin\n\tFSM : my_fsm port map (WAIT_SIG => WAIT_SIG, RESET => RESET, CLK => CLK, Y => Y, RD => RD, WR => WR, ");
 
 	for (int i = 0; i < num_inputs; i++) {
 		fprintf(TB, "%s => %s, ", inputs[i], inputs[i]);

@@ -9,9 +9,12 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 
-	int num_states = *argv[1] - '0';
-	int num_inputs = *argv[2] - '0';
-	int num_outputs = *argv[3] - '0';
+	int num_states;
+	int num_inputs;
+	int num_outputs;
+	sscanf_s(argv[1], "%d", &num_states);
+	sscanf_s(argv[2], "%d", &num_inputs);
+	sscanf_s(argv[3], "%d", &num_outputs);
 
 	FILE* VHDL;
 	FILE* TB;
