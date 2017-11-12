@@ -62,6 +62,35 @@ begin
 			end case;
 		end if;
 	end process sync_proc;
+			
+	action_proc : process(PS)
+		variable s0 : std_logic_vector(31 downto 0) := IN0;
+		variable s1 : std_logic_vector(31 downto 0) := IN1;
+		variable tmp : std_logic_vector(31 downto 0);
+	begin
+		case PS is
+			when ST0 => 
+				--SWAP Instruction
+				tmp := s0;
+				s0 := s1;
+				s1 := tmp;
+				
+				--SUB Instruction
+				s0 := std_logic_vector(unsigned(s0) - unsigned(s1));
+
+				--Output
+				OUT0 <= s0;
+			
+			when WS0 =>
+			when ST1 =>
+			when WS1 =>
+			when ST2 =>
+			when WS2 =>
+			when ST3 =>
+			when WS3 =>
+			when other =>
+		end case;
+	end process action_proc;
 
 	with PS select
 		Y <= "000" when ST0,
