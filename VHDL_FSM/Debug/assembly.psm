@@ -1,0 +1,3 @@
+ADD s0, FF
+ADD s1, 69
+ADD sF, s5
