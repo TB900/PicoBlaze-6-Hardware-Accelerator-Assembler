@@ -1,0 +1,4 @@
+ADD s0, FF
+FETCH s1, 69
+STORE sF, sA
+SL0 sF

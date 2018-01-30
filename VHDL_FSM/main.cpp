@@ -1,14 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "make_VHDL.h"
+#include "parser.h"
 
 int main(int argc, char *argv[]) {
 
-	if (argc != 4) {
-		fprintf(stderr, "Invalid Argument: Please supply: num of states, num of inputs, num of outputs!");
-		return 0;
+	if (argc != 2) {
+		argv[1] = "assembly.psm";
 	}
 
+	dataflow *assembly = NULL;
+	assembly = (dataflow *)malloc(sizeof(dataflow));
+	assembly->next = NULL;
+
+	parse_assembly(argv[1], &assembly);
+	
+	/*
 	int num_states;
 	int num_inputs;
 	int num_outputs;
@@ -27,6 +34,6 @@ int main(int argc, char *argv[]) {
 
 	fclose(VHDL);
 	fclose(TB);
-
+	*/
 	return 0;
 }

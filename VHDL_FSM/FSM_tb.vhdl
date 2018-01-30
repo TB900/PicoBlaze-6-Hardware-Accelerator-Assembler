@@ -16,12 +16,12 @@ architecture test of my_fsm_tb is
 			OUT0 : out std_logic_vector(31 downto 0);
 
 			RD, WR : out std_logic_vector(31 downto 0);
-			Y : out std_logic_vector(2 downto 0)
+			Y : out std_logic_vector(9 downto 0)
 		);
 	end component;
 
 	signal WAIT_SIG, RESET, CLK : std_logic;
-	signal Y : std_logic_vector(2 downto 0);
+	signal Y : std_logic_vector(9 downto 0);
 	signal IN0, IN1, OUT0, RD, WR : std_logic_vector(31 downto 0);
 
 begin
@@ -40,14 +40,6 @@ begin
 	Inputs: process
 	begin
 		WAIT_SIG <= '0' after 0 ns,
-		'1' after 10 ns,
-		'0' after 20 ns,
-		'1' after 30 ns,
-		'0' after 40 ns,
-		'1' after 50 ns,
-		'0' after 60 ns,
-		'1' after 70 ns,
-		'0' after 80 ns;
 		
 		assert false report "Reached end of text";
 		wait;
