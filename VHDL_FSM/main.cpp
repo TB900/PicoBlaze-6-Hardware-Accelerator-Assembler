@@ -14,6 +14,8 @@ int main(int argc, char *argv[]) {
 	assembly->next = NULL;
 
 	parse_assembly(argv[1], &assembly);
+
+	print_dataflow(&assembly);
 	
 	/*
 	int num_states;

@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Instruction enumerables
 typedef enum instruction {
 	ADD,
 	STORE,
@@ -13,6 +14,7 @@ typedef enum instruction {
 	SL0
 } instruction;
 
+// Linked list structure
 typedef struct ins_node {
 	instruction ins;
 	char *op1;
@@ -21,6 +23,8 @@ typedef struct ins_node {
 	struct ins_node *next;
 } dataflow;
 
+// User accessible parsing functions
+void print_dataflow(dataflow **input);
 int parse_assembly(char *assembly_file, dataflow **assembly);
 
 #endif

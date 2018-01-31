@@ -1,9 +1,7 @@
 #include "make_VHDL.h"
 
+// Recursive method which converts an int into its binary representation.
 int convert_int_to_bin(int decimal) {
-	/*
-	* Recursive method which converts an int into its binary representation.
-	*/
 	if (decimal == 0) {
 		return 0;
 	} else {
@@ -11,10 +9,8 @@ int convert_int_to_bin(int decimal) {
 	}
 }
 
+// Returns the length/sig figs of a positive int.
 int num_digits(int n) {
-	/*
-	* Returns the length/sig figs of a positive int.
-	*/
 	if (n < 10) { return 1; }
 	else if (n < 100) { return 2; }
 	else if (n < 1000) { return 3; }
@@ -27,10 +23,9 @@ int num_digits(int n) {
 	else { return 10; }
 }
 
+// Creates the transition conditions for the inputted state
 void case_State_Or_Wait(FILE *VHDL, int total_num_states, int state_num, char states[1000][10], char wait_states[1000][10], int wait) {
-	/*
-	* Creates the transition conditions for the inputted state
-	*/
+	
 	//total_num_states is the num_states inputted at the start
 	//state_num is the iterator for getting the state from states[]
 	//wait is used as a bool to see if input is a state or wait state
@@ -85,10 +80,8 @@ void case_State_Or_Wait(FILE *VHDL, int total_num_states, int state_num, char st
 	}
 }
 
+// Creates a VHDL of a FSM based on the inputted parameters. 
 void make_VHDL(FILE *VHDL, int num_states, int num_inputs, int num_outputs) {
-	/*
-	* Creates a VHDL of a FSM based on the inputted parameters. 
-	*/
 
 	//Imports libraries
 	fprintf(VHDL, "library ieee;\n");
@@ -230,10 +223,8 @@ void make_VHDL(FILE *VHDL, int num_states, int num_inputs, int num_outputs) {
 	fclose(VHDL);
 }
 
+// Creates a testbench for the FSM VHDL based on the inputted parameters.
 void make_Testbench(FILE *TB, int num_states, int num_inputs, int num_outputs) {
-	/*
-	* Creates a testbench for the FSM VHDL based on the inputted parameters.
-	*/
 
 	//Imports libraries
 	fprintf(TB, "library ieee;\n");
