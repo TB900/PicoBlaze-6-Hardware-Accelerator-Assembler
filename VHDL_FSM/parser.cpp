@@ -6,15 +6,33 @@
 #define ERROR_MSG 0x1000
 
 // Corresponding table of instructions for instruction enumerables
-char *instable[] = { "ADD", "STORE", "FETCH", "SL0", NULL };
+char *instable[] = { "ADD", "STORE", "FETCH", "SL0", "INPUT", "OUTPUT", "SL1", "SLA", "SLX", "SR0", "SR1", "SRA", "SRX", "RL", "RR", "ADDCY", "SUB", "SUBCY", "AND", "OR", "XOR", "LOAD", NULL };
  
 //Operator ++ defintion for the instruction enumerables
 instruction& operator++(instruction& p) {
 	switch (p) {
-		case ADD: p = STORE; break;
-		case STORE: p = FETCH; break;
-		case FETCH: p = SL0; break;
-		case SL0: p = ADD; break;
+		case (ADD): p = STORE; break;
+		case (STORE): p = FETCH; break;
+		case (FETCH): p = SL0; break;
+		case (SL0): p = INPUT; break;
+		case (INPUT): p = OUTPUT; break;
+		case (OUTPUT): p = SL1; break;
+		case (SL1): p = SLA; break;
+		case(SLA): p = SLX; break;
+		case(SLX): p = SR0; break;
+		case(SR0): p = SR1; break;
+		case(SR1): p = SRA; break;
+		case(SRA): p = SRX; break;
+		case(SRX): p = RL; break;
+		case(RL): p = RR; break;
+		case(RR): p = ADDCY; break;
+		case(ADDCY): p = SUB; break;
+		case(SUB): p = SUBCY; break;
+		case(SUBCY): p = AND; break;
+		case(AND): p = OR; break;
+		case(OR): p = XOR; break;
+		case(XOR): p = LOAD; break;
+		case(LOAD): p = ADD; break;
 	}
 	return p;
 }
@@ -50,6 +68,15 @@ static int check_operands(dataflow **line, int line_num) {
 		case(ADD):
 		case(STORE):
 		case(FETCH):
+		case(INPUT):
+		case(OUTPUT):
+		case(ADDCY):
+		case(SUB):
+		case(SUBCY):
+		case(AND):
+		case(OR):
+		case(XOR):
+		case(LOAD):
 			
 			/* Case statement for all 2 operand instructions
 			Already know the inputted operands are valid as they comply with the regular expression
@@ -63,7 +90,16 @@ static int check_operands(dataflow **line, int line_num) {
 			}
 
 		case(SL0):
-			
+		case(SL1):
+		case(SLA):
+		case(SLX):
+		case(SR0):
+		case(SR1):
+		case(SRA):
+		case(SRX):
+		case(RL):
+		case(RR):
+
 			/* Case statement for all 1 operand instructions 
 			Checks whether the second operand is not empty, If so return an error and exit
 			Else the operator is valid */
@@ -98,7 +134,7 @@ static int match_regex(regex_t *r, const char *to_match, dataflow **assembly, in
 	const int n_matches = 5; // Maximum number of matches
 	regmatch_t matches[n_matches]; // Contains matches from instruction
 	dataflow *current = *assembly;
-	static int state_num = 0; // Tracks the state the instrution appears in
+	static int state_num = 1; // Tracks the state the instrution appears in
 
 	// Iterate to end of dataflow linked list
 	while (current->next != NULL) {
@@ -123,9 +159,13 @@ static int match_regex(regex_t *r, const char *to_match, dataflow **assembly, in
 			// Check whether operands are valid
 			check_operands(&current, line_num);
 
-			// If the instruction is a STORE or FETCH, increase the state number for next call
-			if (current->ins == 1 || current->ins == 2) {
+			// If the instruction is a STORE or OUTPUT, increase the state number for next call
+			if (current->ins == STORE || current->ins == OUTPUT) {
 				state_num += 1;
+			// Else if instruction is FETCH or INPUT, increased the state number and store it for the node
+			} else if (current->ins == FETCH || current->ins == INPUT) {
+				state_num += 1;
+				current->state = state_num;
 			}
 			
 			// Return from matching current instruction
@@ -174,7 +214,7 @@ static int match_regex(regex_t *r, const char *to_match, dataflow **assembly, in
 }
 
 // The inputted filename is opened and the dataflow assembly linked list is created according to the instructions within the assembly file.
-int parse_assembly (char *assembly_file, dataflow **assembly) {
+void parse_assembly (char *assembly_file, dataflow **assembly, int *num_ST, instruction *last_ins) {
 	FILE *psm; // File pointer for the insputted filename
 	int exists, comp; // Error checking ints
 	regex_t reg_expr; // Where the regular expression string is compiled
@@ -185,7 +225,7 @@ int parse_assembly (char *assembly_file, dataflow **assembly) {
 	exists = fopen_s(&psm, assembly_file, "r");
 	if (exists) {
 		perror("Error");
-		return -1;
+		exit(-1);
 	}
 	
 	// Regular expression for Picoblaze assembly is created and compiled
@@ -197,17 +237,33 @@ int parse_assembly (char *assembly_file, dataflow **assembly) {
 		char regex_error[ERROR_MSG];
 		regerror(comp, &reg_expr, regex_error, ERROR_MSG);
 		printf("Regex error compiling '%s': %s\n", assembly_reg_expr, regex_error);
-		return 1;
+		exit(-1);
 	}
 
 	// Iterate through each line of the assembly file parsing it into the dataflow linked list
-	int line_num = 1;
+	int line_num = 1; // Current line number in assembly file
 	while (fgets(instruction, sizeof(instruction), psm) != NULL) {
-		match_regex(&reg_expr, instruction, assembly, line_num);
-		line_num += 1;
+		// Skips any line breaks in the file
+		if (strcmp(instruction,"\n") != 0) {
+			match_regex(&reg_expr, instruction, assembly, line_num);
+		}
+		line_num += 1; // Increment line number in assembly file
 	}
 
-	// Free the memory for the regular expression and return
+	// Iterate to end of dataflow linked list to get the end node whilst getting the last mem instruction
+	dataflow *end_node = *assembly;
+	while (end_node->next != NULL) {
+		end_node = end_node->next;
+
+		// Store the instruction if it is a memory instruction
+		if (end_node->ins == FETCH || end_node->ins == STORE || end_node->ins == INPUT || end_node->ins == OUTPUT) {
+			*last_ins = end_node->ins;
+		}
+	}
+
+	// Get the number of states required for the state machine from the final node
+	*num_ST = end_node->state;
+
+	// Free the memory for the regular expression
 	regfree(&reg_expr);
-	return 0;
 }

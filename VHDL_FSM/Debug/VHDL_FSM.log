@@ -1,4 +1,6 @@
-﻿  parser.cpp
-  make_VHDL.cpp
-  Generating Code...
+﻿  instruction_templates.cpp
+d:\my documents\c++ projects\vhdl_fsm\vhdl_fsm\instruction_templates.cpp(119): warning C4474: 'fprintf' : too many arguments passed for format string
+  d:\my documents\c++ projects\vhdl_fsm\vhdl_fsm\instruction_templates.cpp(119): note: placeholders and their parameters expect 0 variadic arguments, but 1 were provided
+d:\my documents\c++ projects\vhdl_fsm\vhdl_fsm\instruction_templates.cpp(182): warning C4474: 'fprintf' : too many arguments passed for format string
+  d:\my documents\c++ projects\vhdl_fsm\vhdl_fsm\instruction_templates.cpp(182): note: placeholders and their parameters expect 0 variadic arguments, but 1 were provided
   VHDL_FSM.vcxproj -> D:\My Documents\C++ Projects\VHDL_FSM\Debug\VHDL_FSM.exe

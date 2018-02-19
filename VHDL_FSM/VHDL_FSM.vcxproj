@@ -138,11 +138,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="instruction_templates.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="make_VHDL.cpp" />
     <ClCompile Include="parser.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="instruction_templates.h" />
     <ClInclude Include="parser.h" />
     <ClInclude Include="make_VHDL.h" />
   </ItemGroup>

@@ -1,4 +1,13 @@
-ADD s0, FF
-FETCH s1, 69
-STORE sF, sA
-SL0 sF
+INPUT s0, 00
+FETCH s1, 01
+LOAD s2, 0F
+LOAD s3, 14
+
+AND s0, s0
+OR s1, s1
+XOR s2, s2
+
+OUTPUT s0, 05
+STORE s1, 06
+OUTPUT s2, 07
+STORE s3, 08

@@ -11,7 +11,25 @@ typedef enum instruction {
 	ADD,
 	STORE,
 	FETCH,
-	SL0
+	SL0,
+	INPUT,
+	OUTPUT,
+	SL1,
+	SLA,
+	SLX,
+	SR0,
+	SR1,
+	SRA,
+	SRX,
+	RL,
+	RR,
+	ADDCY,
+	SUB,
+	SUBCY,
+	AND,
+	OR,
+	XOR,
+	LOAD
 } instruction;
 
 // Linked list structure
@@ -25,6 +43,6 @@ typedef struct ins_node {
 
 // User accessible parsing functions
 void print_dataflow(dataflow **input);
-int parse_assembly(char *assembly_file, dataflow **assembly);
+void parse_assembly(char *assembly_file, dataflow **assembly, int *num_ST, instruction *last_ins);
 
 #endif
