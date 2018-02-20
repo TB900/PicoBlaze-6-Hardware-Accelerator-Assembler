@@ -6,7 +6,8 @@
 #define ERROR_MSG 0x1000
 
 // Corresponding table of instructions for instruction enumerables
-char *instable[] = { "ADD", "STORE", "FETCH", "SL0", "INPUT", "OUTPUT", "SL1", "SLA", "SLX", "SR0", "SR1", "SRA", "SRX", "RL", "RR", "ADDCY", "SUB", "SUBCY", "AND", "OR", "XOR", "LOAD", NULL };
+char *instable[] = { "ADD", "STORE", "FETCH", "SL0", "INPUT", "OUTPUT", "SL1", "SLA", "SLX", "SR0", "SR1", "SRA", 
+"SRX", "RL", "RR", "ADDCY", "SUB", "SUBCY", "AND", "OR", "XOR", "LOAD", "COMPARE", "COMPARECY", "TEST", "TESTCY", NULL };
  
 //Operator ++ defintion for the instruction enumerables
 instruction& operator++(instruction& p) {
@@ -32,7 +33,11 @@ instruction& operator++(instruction& p) {
 		case(AND): p = OR; break;
 		case(OR): p = XOR; break;
 		case(XOR): p = LOAD; break;
-		case(LOAD): p = ADD; break;
+		case(LOAD): p = COMPARE; break;
+		case(COMPARE): p = COMPARECY; break;
+		case(COMPARECY): p = TEST; break;
+		case(TEST): p = TESTCY; break;
+		case(TESTCY): p = ADD; break;
 	}
 	return p;
 }
@@ -77,6 +82,10 @@ static int check_operands(dataflow **line, int line_num) {
 		case(OR):
 		case(XOR):
 		case(LOAD):
+		case(COMPARE):
+		case(COMPARECY):
+		case(TEST):
+		case(TESTCY):
 			
 			/* Case statement for all 2 operand instructions
 			Already know the inputted operands are valid as they comply with the regular expression

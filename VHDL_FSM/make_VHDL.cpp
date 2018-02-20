@@ -206,6 +206,22 @@ static void action_Proc(FILE *VHDL, dataflow **assembly, char states[1000][10], 
 			case(LOAD):
 				ins_LOAD(VHDL, current_ins->op1, current_ins->op2);
 				break;
+
+			case(COMPARE):
+				ins_COMPARE(VHDL, current_ins->op1, current_ins->op2);
+				break;
+
+			case(COMPARECY):
+				ins_COMPARECY(VHDL, current_ins->op1, current_ins->op2);
+				break;
+
+			case(TEST):
+				ins_TEST(VHDL, current_ins->op1, current_ins->op2);
+				break;
+
+			case(TESTCY):
+				ins_TESTCY(VHDL, current_ins->op1, current_ins->op2);
+				break;
 		}
 	}
 }
@@ -238,7 +254,7 @@ void make_VHDL(FILE *VHDL, char *entity, int num_states, int num_inputs, int num
 		strcat_s(input, 60, "\t\t\tIN");
 		snprintf(num_to_char, 5, "%d", i);
 		strcat_s(input, 60, num_to_char);
-		strcat_s(input, 60, " : in std_logic_vector(31 downto 0);");
+		strcat_s(input, 60, " : in std_logic_vector(7 downto 0);");
 
 		if (i == num_inputs - 1) {
 			strcat_s(input, 60, "\n\n");
@@ -258,7 +274,7 @@ void make_VHDL(FILE *VHDL, char *entity, int num_states, int num_inputs, int num
 		strcat_s(output, 60, "\t\t\tOUT");
 		snprintf(num_to_char, 5, "%d", i);
 		strcat_s(output, 60, num_to_char);
-		strcat_s(output, 60, " : out std_logic_vector(31 downto 0);");
+		strcat_s(output, 60, " : out std_logic_vector(7 downto 0);");
 
 		if (i == num_outputs - 1) {
 			strcat_s(output, 60, "\n\n");
@@ -432,7 +448,7 @@ void make_Testbench(FILE *TB, char *entity, int num_states, int num_inputs, int 
 
 	//Architecture and Component initialisation
 	fprintf(TB, "architecture test of %s_tb is\n\tcomponent my_fsm\n\t\tport\n\t\t(", entity);
-	fprintf(TB, "\n\t\t\tWAIT_SIG, RESET, CLK : in std_logic;\n\n");
+	fprintf(TB, "\n\t\t\tMEM_GNT, RESET, CLK : in std_logic;\n\n");
 
 	char num_to_char[5]; //Temp store for num to char[]
 	char inputs[100][10];
@@ -449,7 +465,7 @@ void make_Testbench(FILE *TB, char *entity, int num_states, int num_inputs, int 
 		strcat_s(input_state, 10, num_to_char);
 		strcpy_s(inputs[i], 10, input_state);
 		strcat_s(input, 60, input_state);
-		strcat_s(input, 60, " : in std_logic_vector(31 downto 0);");
+		strcat_s(input, 60, " : in std_logic_vector(7 downto 0);");
 
 		if (i == num_inputs - 1) {
 			strcat_s(input, 60, "\n\n");
@@ -474,7 +490,7 @@ void make_Testbench(FILE *TB, char *entity, int num_states, int num_inputs, int 
 		strcat_s(output_state, 10, num_to_char);
 		strcpy_s(outputs[i], 10, output_state);
 		strcat_s(output, 60, output_state);
-		strcat_s(output, 60, " : out std_logic_vector(31 downto 0);");
+		strcat_s(output, 60, " : out std_logic_vector(7 downto 0);");
 
 		if (i == num_outputs - 1) {
 			strcat_s(output, 60, "\n\n");
@@ -488,41 +504,40 @@ void make_Testbench(FILE *TB, char *entity, int num_states, int num_inputs, int 
 		free(output_state);
 	}
 
-	fprintf(TB, "\t\t\tRD, WR : out std_logic_vector(31 downto 0);\n\t\t\tY : out std_logic_vector(%d downto 0)\n\t\t);\n", num_bits);
-	fprintf(TB, "\tend component;\n\n\tsignal WAIT_SIG, RESET, CLK : std_logic;\n\tsignal Y : std_logic_vector(%d downto 0);\n\tsignal ", num_bits);
+	fprintf(TB, "\t\t\tRD_RQ, WR_RQ : out std_logic;\n\t\t\tY : out std_logic_vector(%d downto 0)\n\t\t);\n", num_bits);
+	fprintf(TB, "\tend component;\n\n\tsignal MEM_GNT, RESET, CLK, RD_RQ, WR_RQ : std_logic;\n\tsignal Y : std_logic_vector(%d downto 0);\n\tsignal ", num_bits);
 
-	for (int i = 0; i < num_inputs; i++) {
-		fprintf(TB, "%s, ", inputs[i]);
-	}
-	for (int i = 0; i < num_outputs; i++) {
-		fprintf(TB, "%s", outputs[i]);
-		if (i != num_outputs - 1) {
-			fprintf(TB, ", ");
+	if (num_inputs > 0 && num_outputs > 0) {
+		for (int i = 0; i < num_inputs; i++) {
+			fprintf(TB, "%s, ", inputs[i]);
 		}
+		for (int i = 0; i < num_outputs; i++) {
+			fprintf(TB, "%s", outputs[i]);
+			if (i != num_outputs - 1) {
+				fprintf(TB, ", ");
+			}
+		}
+		fprintf(TB, " : std_logic_vector(7 downto 0);\n\n");
 	}
-	fprintf(TB, ", RD, WR : std_logic_vector(31 downto 0);\n\n");
 
 	//Architecture Processes
 	//Port map
-	fprintf(TB, "begin\n\tFSM : my_fsm port map (WAIT_SIG => WAIT_SIG, RESET => RESET, CLK => CLK, Y => Y, RD => RD, WR => WR, ");
+	fprintf(TB, "begin\n\tFSM : my_fsm port map (MEM_GNT => MEM_GNT, RESET => RESET, CLK => CLK, Y => Y, RD_RQ => RD_RQ, WR_RQ => WR_RQ");
 
 	for (int i = 0; i < num_inputs; i++) {
-		fprintf(TB, "%s => %s, ", inputs[i], inputs[i]);
+		fprintf(TB, ", %s => %s", inputs[i], inputs[i]);
 	}
 	for (int i = 0; i < num_outputs; i++) {
-		fprintf(TB, "%s => %s", outputs[i], outputs[i]);
-		if (i != num_outputs - 1) {
-			fprintf(TB, ", ");
-		}
+		fprintf(TB, ", %s => %s", outputs[i], outputs[i]);
 	}
 	fprintf(TB, ");\n\n\t");
 
 	//CLK process
-	fprintf(TB, "CLK_ticks : process\n\tbegin\n\t\tloop\n\t\t\tCLK <= '1';\n\t\t\twait for 5 ns;\n\t\t\t");
-	fprintf(TB, "CLK <= '0';\n\t\t\twait for 5 ns;\n\t\tend loop;\n\tend process;\n\n\t");
+	fprintf(TB, "CLK_ticks : process\n\tbegin\n\t\tloop\n\t\t\tCLK <= '1';\n\t\t\twait for 2.5 ns;\n\t\t\t");
+	fprintf(TB, "CLK <= '0';\n\t\t\twait for 2.5 ns;\n\t\tend loop;\n\tend process;\n\n\t");
 
 	//WAIT_SIG and RESET process
-	fprintf(TB, "Inputs: process\n\tbegin\n\t\tWAIT_SIG <= '0' after 0 ns,\n\t\t");
+	fprintf(TB, "Inputs: process\n\tbegin\n\t\tMEM_GNT <= '0' after 0 ns,\n\t\t");
 	int interval = 10;
 	for (int i = 1; i < num_states + 1; i++) {
 		fprintf(TB, "'1' after %d ns,\n\t\t", interval);

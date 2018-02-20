@@ -26,5 +26,9 @@ void ins_AND(FILE *VHDL, char *op1, char *op2);
 void ins_OR(FILE *VHDL, char *op1, char *op2);
 void ins_XOR(FILE *VHDL, char *op1, char *op2);
 void ins_LOAD(FILE *VHDL, char *op1, char *op2);
+void ins_COMPARE(FILE *VHDL, char *op1, char *op2);
+void ins_COMPARECY(FILE *VHDL, char *op1, char *op2);
+void ins_TEST(FILE *VHDL, char *op1, char *op2);
+void ins_TESTCY(FILE *VHDL, char *op1, char *op2);
 
 #endif

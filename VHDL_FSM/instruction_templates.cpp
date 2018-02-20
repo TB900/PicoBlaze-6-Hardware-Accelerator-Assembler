@@ -282,8 +282,7 @@ void ins_SUBCY(FILE *VHDL, char *op1, char *op2) {
 	// If both operands are registers
 	if (strstr(op2, "s") != NULL) {
 		fprintf(VHDL, "\t\t\t\tTMP := ('0' & %s) - ('0' & %s) - (\"0000000\" & CARRY);\n", op1, op2);
-	}
-	else {
+	} else {
 		fprintf(VHDL, "\t\t\t\tTMP := ('0' & %s) - x\"%s\" - (\"0000000\" & CARRY);\n", op1, op2);
 	}
 
@@ -324,8 +323,7 @@ void ins_OR(FILE *VHDL, char *op1, char *op2) {
 	// If both operands are registers, perform AND between two registers
 	if (strstr(op2, "s") != NULL) {
 		fprintf(VHDL, "\t\t\t\t%s := %s OR %s;\n", op1, op1, op2);
-	}
-	else {
+	} else {
 		fprintf(VHDL, "\t\t\t\t%s := %s OR x\"%s\";\n", op1, op1, op2);
 	}
 
@@ -344,8 +342,7 @@ void ins_XOR(FILE *VHDL, char *op1, char *op2) {
 	// If both operands are registers, perform AND between two registers
 	if (strstr(op2, "s") != NULL) {
 		fprintf(VHDL, "\t\t\t\t%s := %s XOR %s;\n", op1, op1, op2);
-	}
-	else {
+	} else {
 		fprintf(VHDL, "\t\t\t\t%s := %s XOR x\"%s\";\n", op1, op1, op2);
 	}
 
@@ -364,8 +361,86 @@ void ins_LOAD(FILE *VHDL, char *op1, char *op2) {
 	// LOAD operand 2 into register in operand 1
 	if (strstr(op2, "s") != NULL) {
 		fprintf(VHDL, "\t\t\t\t%s := %s;\n\n", op1, op2);
-	}
-	else {
+	} else {
 		fprintf(VHDL, "\t\t\t\t%s := x\"%s\";\n\n", op1, op2);
 	}
+}
+
+void ins_COMPARE(FILE *VHDL, char *op1, char *op2) {
+	// Instruction comment
+	fprintf(VHDL, "\t\t\t\t-- COMPARE %s, %s\n", op1, op2);
+
+	// If both operands are registers, perform SUB between two registers storing in a TMP variable
+	if (strstr(op2, "s") != NULL) {
+		fprintf(VHDL, "\t\t\t\tTMP := ('0' & %s) - ('0' & %s);\n", op1, op2);
+	} else {
+		fprintf(VHDL, "\t\t\t\tTMP := ('0' & %s) - x\"%s\";\n", op1, op2);
+	}
+
+	// Set the CARRY (BORROW) flag
+	fprintf(VHDL, "\t\t\t\tCARRY := TMP(8);\n");
+
+	// Set the ZERO flag
+	fprintf(VHDL, "\t\t\t\tif (%s = \"00000000\") then\n", op1);
+	fprintf(VHDL, "\t\t\t\t\tZERO := '1';\n\t\t\t\telse \n\t\t\t\t\tZERO := '0';\n\t\t\t\tend if;\n\n");
+}
+
+void ins_COMPARECY(FILE *VHDL, char *op1, char *op2) {
+	// Instruction comment
+	fprintf(VHDL, "\t\t\t\t-- COMPARECY %s, %s\n", op1, op2);
+
+	// If both operands are registers
+	if (strstr(op2, "s") != NULL) {
+		fprintf(VHDL, "\t\t\t\tTMP := ('0' & %s) - ('0' & %s) - (\"0000000\" & CARRY);\n", op1, op2);
+	} else {
+		fprintf(VHDL, "\t\t\t\tTMP := ('0' & %s) - x\"%s\" - (\"0000000\" & CARRY);\n", op1, op2);
+	}
+
+	// Set the CARRY (BORROW) flag
+	fprintf(VHDL, "\t\t\t\tCARRY := TMP(8);\n");
+
+	// Set the ZERO flag
+	fprintf(VHDL, "\t\t\t\tif (%s = \"00000000\") then\n", op1);
+	fprintf(VHDL, "\t\t\t\t\tZERO := '1';\n\t\t\t\telse \n\t\t\t\t\tZERO := '0';\n\t\t\t\tend if;\n\n");
+}
+
+void ins_TEST(FILE *VHDL, char *op1, char *op2) {
+	// Instruction comment
+	fprintf(VHDL, "\t\t\t\t-- TEST %s, %s\n", op1, op2);
+
+	// If both operands are registers, perform AND between two registers
+	if (strstr(op2, "s") != NULL) {
+		fprintf(VHDL, "\t\t\t\tTMP := ('0' & %s) AND ('0' & %s);\n", op1, op1, op2);
+	} else {
+		fprintf(VHDL, "\t\t\t\tTMP := ('0' & %s) AND x\"%s\";\n", op1, op1, op2);
+	}
+
+	// Set the ZERO flag
+	fprintf(VHDL, "\t\t\t\tif (%s = \"00000000\") then\n", op1);
+	fprintf(VHDL, "\t\t\t\t\tZERO := '1';\n\t\t\t\telse \n\t\t\t\t\tZERO := '0';\n\t\t\t\tend if;\n");
+
+	// Set CARRY flag if parity is odd
+	fprintf(VHDL, "\t\t\t\tif (XOR TMP = '1') then\n");
+	fprintf(VHDL, "\t\t\t\t\tCARRY := '1';\n\t\t\t\telse \n\t\t\t\t\tCARRY := '0';\n\t\t\t\tend if;\n\n");
+}
+
+void ins_TESTCY(FILE *VHDL, char *op1, char *op2) {
+	// Instruction comment
+	fprintf(VHDL, "\t\t\t\t-- TESTCY %s, %s\n", op1, op2);
+
+	// If both operands are registers, perform AND between two registers
+	if (strstr(op2, "s") != NULL) {
+		fprintf(VHDL, "\t\t\t\tTMP := ('0' & %s) AND ('0' & %s);\n", op1, op1, op2);
+	}
+	else {
+		fprintf(VHDL, "\t\t\t\tTMP := ('0' & %s) AND x\"%s\";\n", op1, op1, op2);
+	}
+
+	// Set the ZERO flag
+	fprintf(VHDL, "\t\t\t\tif (%s = \"00000000\" AND ZERO = '1') then\n", op1);
+	fprintf(VHDL, "\t\t\t\t\tZERO := '1';\n\t\t\t\telse \n\t\t\t\t\tZERO := '0';\n\t\t\t\tend if;\n");
+
+	// Set CARRY flag if parity is odd
+	fprintf(VHDL, "\t\t\t\tif (XOR TMP = '1' OR CARRY = '1') then\n");
+	fprintf(VHDL, "\t\t\t\t\tCARRY := '1';\n\t\t\t\telse \n\t\t\t\t\tCARRY := '0';\n\t\t\t\tend if;\n\n");
 }

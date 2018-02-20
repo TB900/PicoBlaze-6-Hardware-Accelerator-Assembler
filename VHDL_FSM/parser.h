@@ -29,7 +29,11 @@ typedef enum instruction {
 	AND,
 	OR,
 	XOR,
-	LOAD
+	LOAD,
+	COMPARE,
+	COMPARECY,
+	TEST,
+	TESTCY
 } instruction;
 
 // Linked list structure
