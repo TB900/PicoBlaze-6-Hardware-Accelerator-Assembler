@@ -7,7 +7,7 @@
 #include "parser.h"
 #include "instruction_templates.h"
 
-void make_VHDL(FILE *VHDL, char *entity, int num_states, int num_inputs, int num_outputs, instruction last_ins, dataflow **assembly);
+void make_VHDL(FILE *VHDL, char *entity, int num_states, int pb_sleep, int num_inputs, int num_outputs, instruction last_ins, dataflow **assembly);
 void make_Testbench(FILE *TB, char *entity, int num_states, int num_inputs, int num_outputs);
 
 #endif

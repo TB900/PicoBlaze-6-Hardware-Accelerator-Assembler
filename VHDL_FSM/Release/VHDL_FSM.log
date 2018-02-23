@@ -1,6 +1,8 @@
-﻿  main.cpp
+﻿  instruction_templates.cpp
+  main.cpp
   make_VHDL.cpp
+  parser.cpp
   Generating code
-  All 8 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  All 45 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
   Finished generating code
   VHDL_FSM.vcxproj -> D:\My Documents\C++ Projects\VHDL_FSM\Release\VHDL_FSM.exe

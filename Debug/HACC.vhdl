@@ -5,10 +5,10 @@ use ieee.numeric_std.all;
 entity HACC is
 	port
 		(
-			CLK, RESET, MEM_GNT : in std_logic;
+			CLK, START, MEM_GNT : in std_logic;
 			DATA_IN : in std_logic_vector(7 downto 0);
 			DATA_OUT, ADDR : out std_logic_vector(7 downto 0);
-			MEM_RQ, RD_RQ, WR_RQ : out std_logic;
+			MEM_RQ, RD_RQ, WR_RQ, PB_SLEEP : out std_logic;
 			Y : out std_logic_vector(3 downto 0)
 		);
 end HACC;
@@ -17,13 +17,21 @@ architecture HACC_arch of HACC is
 	type state_type is (ST_START, ST0, WS0, ST1, WS1, ST2, WS2, ST3, WS3, ST4, WS4, ST5, WS5, ST_END);
 	signal PS : state_type;
 begin
-	sync_proc : process(CLK, PS, RESET, MEM_GNT)
+	sync_proc : process(CLK, PS, START, MEM_GNT)
 	begin
-		if (RESET = '1') then PS <= ST_START;
-		elsif (rising_edge(CLK)) then
+		if (START = '1') then
+			PB_SLEEP <= '1';
+		end if;
+
+		if (rising_edge(CLK)) then
 			case PS is
 				when ST_START =>
-					PS <= ST0;
+					if (START = '1') then
+						PS <= ST0;
+					else 
+						PB_SLEEP <= '0';
+						PS <= ST_START
+					end if;
 
 				when ST0 =>
 					MEM_RQ <= '1';
@@ -110,7 +118,8 @@ begin
 					end if;
 
 				when ST_END =>
-					PS <= ST_END;
+					PB_SLEEP <= '0';
+					PS <= ST_START;
 
 				when others =>
 					PS <= ST_START;
@@ -158,7 +167,7 @@ begin
 
 				-- AND s0, s0
 				s0 := s0 AND s0;
-				CARRY := 0;
+				CARRY := '0';
 				if (s0 = "00000000") then
 					ZERO := '1';
 				else 
@@ -167,7 +176,7 @@ begin
 
 				-- OR s1, s1
 				s1 := s1 OR s1;
-				CARRY := 0;
+				CARRY := '0';
 				if (s1 = "00000000") then
 					ZERO := '1';
 				else 
@@ -176,7 +185,7 @@ begin
 
 				-- XOR s2, s2
 				s2 := s2 XOR s2;
-				CARRY := 0;
+				CARRY := '0';
 				if (s2 = "00000000") then
 					ZERO := '1';
 				else 

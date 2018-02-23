@@ -8,33 +8,31 @@ architecture test of HACC_tb is
 	component my_fsm
 		port
 		(
-			WAIT_SIG, RESET, CLK : in std_logic;
-
-			RD, WR : out std_logic_vector(31 downto 0);
+			MEM_GNT, START, CLK : in std_logic;
+			RD_RQ, WR_RQ : out std_logic;
 			Y : out std_logic_vector(3 downto 0)
 		);
 	end component;
 
-	signal WAIT_SIG, RESET, CLK : std_logic;
+	signal MEM_GNT, START, CLK, RD_RQ, WR_RQ : std_logic;
 	signal Y : std_logic_vector(3 downto 0);
-	signal , RD, WR : std_logic_vector(31 downto 0);
-
-begin
-	FSM : my_fsm port map (WAIT_SIG => WAIT_SIG, RESET => RESET, CLK => CLK, Y => Y, RD => RD, WR => WR, );
+	signal begin
+	FSM : my_fsm port map (MEM_GNT => MEM_GNT, START => START, CLK => CLK, Y => Y, RD_RQ => RD_RQ, WR_RQ => WR_RQ);
 
 	CLK_ticks : process
 	begin
 		loop
 			CLK <= '1';
-			wait for 5 ns;
+			wait for 2.5 ns;
 			CLK <= '0';
-			wait for 5 ns;
+			wait for 2.5 ns;
 		end loop;
 	end process;
 
 	Inputs: process
 	begin
-		WAIT_SIG <= '0' after 0 ns,
+		START <= '1' after 0 ns;
+		MEM_GNT <= '0' after 0 ns,
 		'1' after 10 ns,
 		'0' after 20 ns,
 		'1' after 30 ns,

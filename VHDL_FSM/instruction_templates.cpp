@@ -116,7 +116,7 @@ void ins_SLA(FILE *VHDL, char *op1) {
 	fprintf(VHDL, "\t\t\t\t%s := TMP(7 downto 0);\n", op1);
 
 	// Set new CARRY flag
-	fprintf(VHDL, "\t\t\t\tCARRY := TMP(8);\n", op1);
+	fprintf(VHDL, "\t\t\t\tCARRY := TMP(8);\n");
 
 	// Set the ZERO flag
 	fprintf(VHDL, "\t\t\t\tif (%s = \"00000000\") then\n", op1);
@@ -179,7 +179,7 @@ void ins_SRA(FILE *VHDL, char *op1) {
 	fprintf(VHDL, "\t\t\t\t%s := TMP(8 downto 1);\n", op1);
 
 	// Set new CARRY flag
-	fprintf(VHDL, "\t\t\t\tCARRY := TMP(0);\n", op1);
+	fprintf(VHDL, "\t\t\t\tCARRY := TMP(0);\n");
 
 	// Set the ZERO flag
 	fprintf(VHDL, "\t\t\t\tif (%s = \"00000000\") then\n", op1);
@@ -410,9 +410,9 @@ void ins_TEST(FILE *VHDL, char *op1, char *op2) {
 
 	// If both operands are registers, perform AND between two registers
 	if (strstr(op2, "s") != NULL) {
-		fprintf(VHDL, "\t\t\t\tTMP := ('0' & %s) AND ('0' & %s);\n", op1, op1, op2);
+		fprintf(VHDL, "\t\t\t\tTMP := ('0' & %s) AND ('0' & %s);\n", op1, op2);
 	} else {
-		fprintf(VHDL, "\t\t\t\tTMP := ('0' & %s) AND x\"%s\";\n", op1, op1, op2);
+		fprintf(VHDL, "\t\t\t\tTMP := ('0' & %s) AND x\"%s\";\n", op1, op2);
 	}
 
 	// Set the ZERO flag
@@ -430,10 +430,10 @@ void ins_TESTCY(FILE *VHDL, char *op1, char *op2) {
 
 	// If both operands are registers, perform AND between two registers
 	if (strstr(op2, "s") != NULL) {
-		fprintf(VHDL, "\t\t\t\tTMP := ('0' & %s) AND ('0' & %s);\n", op1, op1, op2);
+		fprintf(VHDL, "\t\t\t\tTMP := ('0' & %s) AND ('0' & %s);\n", op1, op2);
 	}
 	else {
-		fprintf(VHDL, "\t\t\t\tTMP := ('0' & %s) AND x\"%s\";\n", op1, op1, op2);
+		fprintf(VHDL, "\t\t\t\tTMP := ('0' & %s) AND x\"%s\";\n", op1, op2);
 	}
 
 	// Set the ZERO flag

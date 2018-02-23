@@ -208,7 +208,7 @@ static int match_regex(regex_t *r, const char *to_match, dataflow **assembly, in
 			If i is capturing group 4, assign it to the op2 of the node
 			*/
 			if (i == 1) {
-				char *instruction = (char *)calloc(10, sizeof(char) * 10);
+				char *instruction = (char *)calloc(15, sizeof(char) * 15);
 				memcpy(instruction, (to_match + (start * 2)), (sizeof(char)*(finish - start)));
 				current->ins = check_instruction(instruction, line_num);
 			} else if (i == 2) {
