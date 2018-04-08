@@ -1,3 +1,5 @@
-ADD s0, FF
-ADD s1, 69
-ADD sF, s5
+INPUT s0, 00
+
+ADD s0, 05
+
+OUTPUT s0, 00
