@@ -1,8 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include "make_VHDL.h"
-#include "parser.h"
+#include "main.h"
 
 int main(int argc, char *argv[]) {
 
@@ -41,7 +37,6 @@ int main(int argc, char *argv[]) {
 
 	// Check the entity name starts with a letter and only uses letters, numbers and underscores
 	int entity_size = 0;
-
 	
 	if ((!isalpha(argv[2][entity_size]))) {
 		fprintf(stderr, "Error: 2nd argument for entity name is invalid! Make sure the name begins with a letter!");
@@ -77,8 +72,8 @@ int main(int argc, char *argv[]) {
 	if (errno == ERANGE) {
 		fprintf(stderr, "Error: 4th argument for number of inputs is invalid! Make sure it is a valid long int value!");
 		return -1;
-	} else if (endptr == argv[5]) {
-		fprintf(stderr, "Error: 5th argument for number of inputs is invalid! Make sure it is a valid long int value!");
+	} else if (endptr == argv[4]) {
+		fprintf(stderr, "Error: 4th argument for number of inputs is invalid! Make sure it is a valid long int value!");
 		return -1;
 	}
 
@@ -120,8 +115,8 @@ int main(int argc, char *argv[]) {
 	fopen_s(&TB, test_filename, "w");
 
 	// Functions which create the VHDL componenets and testbench
-	make_VHDL(VHDL, argv[2], num_ST, pb_sleep, num_IN, num_OUT, last_ins, &assembly);
-	make_Testbench(TB, argv[2], num_ST, num_IN, num_OUT);
+	int num_bits = make_VHDL(VHDL, argv[2], num_ST, pb_sleep, num_IN, num_OUT, last_ins, &assembly);
+	make_Testbench(TB, argv[2], num_ST, num_IN, num_OUT, num_bits);
 
 	// Closes the files and ends 
 	fclose(VHDL);

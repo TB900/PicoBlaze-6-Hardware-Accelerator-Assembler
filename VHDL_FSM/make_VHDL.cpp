@@ -110,7 +110,7 @@ static void action_Proc(FILE *VHDL, dataflow **assembly, char states[1000][10], 
 
 	fprintf(VHDL, "\t\t\twhen %s =>\n", states[current_state]);
 
-	// While the current instruction isn't NULL
+	// While the current instruction isn't NULL, add the template for the current instruction to the VHDL
 	while (current_ins->next != NULL) {
 		current_ins = current_ins->next;
 
@@ -222,12 +222,20 @@ static void action_Proc(FILE *VHDL, dataflow **assembly, char states[1000][10], 
 			case(TESTCY):
 				ins_TESTCY(VHDL, current_ins->op1, current_ins->op2);
 				break;
+
+			case(LOOP):
+				ins_LOOP(VHDL, current_ins->op1);
+				break;
+
+			case(END_LOOP):
+				ins_END_LOOP(VHDL, current_ins->op1);
+				break;
 		}
 	}
 }
 
 // Creates a VHDL of a FSM based on the inputted parameters. 
-void make_VHDL(FILE *VHDL, char *entity, int num_states, int pb_sleep,int num_inputs, int num_outputs, instruction last_ins, dataflow **assembly) {
+int make_VHDL(FILE *VHDL, char *entity, int num_states, int pb_sleep, int num_inputs, int num_outputs, instruction last_ins, dataflow **assembly) {
 
 	//Imports libraries
 	fprintf(VHDL, "library ieee;\n");
@@ -280,7 +288,13 @@ void make_VHDL(FILE *VHDL, char *entity, int num_states, int pb_sleep,int num_in
 
 	//Entity description INPUT , OUTPUT, Request Outputs and Current State Number output
 	fprintf(VHDL, "\t\t\tDATA_IN : in std_logic_vector(7 downto 0);\n\t\t\tDATA_OUT, ADDR : out std_logic_vector(7 downto 0);");
-	fprintf(VHDL, "\n\t\t\tMEM_RQ, RD_RQ, WR_RQ, PB_SLEEP : out std_logic;\n\t\t\tY : out std_logic_vector(%d downto 0)\n\t\t);\nend %s;\n\n", num_bits, entity);
+
+	//If num_bits = 0 then use ST_OUT : std_logic, else use ST_OUT : std_logic_vector
+	if (num_bits == 0) {
+		fprintf(VHDL, "\n\t\t\tMEM_RQ, RD_RQ, WR_RQ, PB_SLEEP : out std_logic;\n\t\t\tST_OUT : out std_logic\n\t\t);\nend %s;\n\n", entity);
+	} else {
+		fprintf(VHDL, "\n\t\t\tMEM_RQ, RD_RQ, WR_RQ, PB_SLEEP : out std_logic;\n\t\t\tST_OUT : out std_logic_vector(%d downto 0)\n\t\t);\nend %s;\n\n", num_bits, entity);
+	}
 	
 	//Architecture start
 	fprintf(VHDL, "architecture HACC_arch of %s is\n\ttype state_type is (", entity);
@@ -341,7 +355,7 @@ void make_VHDL(FILE *VHDL, char *entity, int num_states, int pb_sleep,int num_in
 	// ST_START case
 	fprintf(VHDL, "\t\t\t\twhen ST_START =>\n\t\t\t\t\tif (START = '1') then\n\t\t\t\t\t\t");
 	fprintf(VHDL, "PS <= ST0;\n\t\t\t\t\telse \n\t\t\t\t\t\tPB_SLEEP <= '0';\n\t\t\t\t\t\t");
-	fprintf(VHDL, "PS <= ST_START\n\t\t\t\t\tend if;\n\n");
+	fprintf(VHDL, "PS <= ST_START;\n\t\t\t\t\tend if;\n\n");
 
 	//Creates all of the transition conditions for each state along with the RD and WR Requests.
 	dataflow *mem_ins = *assembly;
@@ -387,7 +401,7 @@ void make_VHDL(FILE *VHDL, char *entity, int num_states, int pb_sleep,int num_in
 
 	// ACTION process variable initialisation and begin case for PS
 	fprintf(VHDL, "\taction_proc : process(PS)\n\t\tvariable s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, sA, sB, sC, sD, sE, sF : unsigned(7 downto 0);");
-	fprintf(VHDL, "\n\t\tvariable TMP : unsigned(8 downto 0);\n\t\tvariable CARRY, ZERO : std_logic;\n\tbegin\n\t\tcase (PS) is\n");
+	fprintf(VHDL, "\n\t\tvariable TMP : unsigned(8 downto 0);\n\t\tvariable CARRY, ZERO : std_logic := '0';\n\n\tbegin\n\t\tcase (PS) is\n");
 
 	// Create each case for PS
 	action_Proc(VHDL, assembly, states, len_of_states);
@@ -398,7 +412,7 @@ void make_VHDL(FILE *VHDL, char *entity, int num_states, int pb_sleep,int num_in
 	fprintf(VHDL, "\n\tend process action_proc;\n\n");
 	
 	//Y output based on current state
-	fprintf(VHDL, "\twith PS select\n\t\tY <=");
+	fprintf(VHDL, "\twith PS select\n\t\tST_OUT <=");
 
 	//Creates binary representation for each state
 	int bin_state_num = 0;
@@ -426,10 +440,12 @@ void make_VHDL(FILE *VHDL, char *entity, int num_states, int pb_sleep,int num_in
 	fprintf(VHDL, "end HACC_arch;");
 
 	fclose(VHDL);
+
+	return num_bits;
 }
 
 // Creates a testbench for the FSM VHDL based on the inputted parameters.
-void make_Testbench(FILE *TB, char *entity, int num_states, int num_inputs, int num_outputs) {
+void make_Testbench(FILE *TB, char *entity, int num_states, int num_inputs, int num_outputs, int num_bits) {
 
 	//Imports libraries
 	fprintf(TB, "library ieee;\n");
@@ -438,11 +454,11 @@ void make_Testbench(FILE *TB, char *entity, int num_states, int num_inputs, int 
 	//Entity description
 	fprintf(TB, "entity %s_tb is\nend %s_tb;\n\n", entity, entity);
 
-	int num_bits = num_digits(convert_int_to_bin((num_states * 2) - 1)) - 1;
-
-	//Architecture and Component initialisation
-	fprintf(TB, "architecture test of %s_tb is\n\tcomponent my_fsm\n\t\tport\n\t\t(", entity);
-	fprintf(TB, "\n\t\t\tMEM_GNT, START, CLK : in std_logic;\n");
+	//HA Architecture and Component initialisation
+	fprintf(TB, "architecture test of %s_tb is\n\tcomponent %s\n\t\tport\n\t\t(", entity, entity);
+	fprintf(TB, "\n\t\t\tCLK, START, MEM_GNT : in std_logic;");
+	fprintf(TB, "\n\t\t\tDATA_IN : in std_logic_vector(7 downto 0);");
+	fprintf(TB, "\n\t\t\tDATA_OUT, ADDR : out std_logic_vector(7 downto 0);\n");
 
 	char num_to_char[5]; //Temp store for num to char[]
 	char inputs[100][10];
@@ -488,10 +504,26 @@ void make_Testbench(FILE *TB, char *entity, int num_states, int num_inputs, int 
 		free(output_state);
 	}
 
-	fprintf(TB, "\t\t\tRD_RQ, WR_RQ : out std_logic;\n\t\t\tY : out std_logic_vector(%d downto 0)\n\t\t);\n", num_bits);
-	fprintf(TB, "\tend component;\n\n\tsignal MEM_GNT, START, CLK, RD_RQ, WR_RQ : std_logic;\n\tsignal Y : std_logic_vector(%d downto 0);\n\tsignal ", num_bits);
+	//If num_bits = 0 then use ST_OUT : std_logic, else use ST_OUT : std_logic_vector
+	if (num_bits == 0) {
+		fprintf(TB, "\t\t\tMEM_RQ, RD_RQ, WR_RQ, PB_SLEEP : out std_logic;\n\t\t\tST_OUT : out std_logic\n\t\t);\nend %s;\n\n", entity);
+	} else {
+		fprintf(TB, "\t\t\tMEM_RQ, RD_RQ, WR_RQ, PB_SLEEP : out std_logic;\n\t\t\tST_OUT : out std_logic_vector(%d downto 0)\n\t\t);\n", num_bits);
+	}
+
+	//End HA component
+	fprintf(TB, "\tend component;\n\n\t");
+
+	//DPRAM component
+	fprintf(TB, "component dpram\n\t\tport\n\t\t(\n\t\t\tdata_a, data_b, addr_a, addr_b : in std_logic_vector(7 downto 0);\n\t\t\t");
+	fprintf(TB, "re_b, we_a, we_b, clk : in std_logic;\n\t\t\tq_a, q_b : out std_logic_vector(7 downto 0)\n\t\t);\n\tend component;\n\n\t");
+		
+	//HA and DPRAM component signals
+	fprintf(TB, "signal DATA_IN, DATA_OUT, ADDR : std_logic_vector(7 downto 0);\n\t");
+	fprintf(TB, "signal MEM_GNT, START, CLK, RD_RQ, WR_RQ, PB_SLEEP, MEM_RQ : std_logic;\n\tsignal ST_OUT : std_logic_vector(%d downto 0);\n\n\t", num_bits);
 
 	if (num_inputs > 0 && num_outputs > 0) {
+		fprintf(TB, "signal ");
 		for (int i = 0; i < num_inputs; i++) {
 			fprintf(TB, "%s, ", inputs[i]);
 		}
@@ -501,12 +533,19 @@ void make_Testbench(FILE *TB, char *entity, int num_states, int num_inputs, int 
 				fprintf(TB, ", ");
 			}
 		}
-		fprintf(TB, " : std_logic_vector(7 downto 0);\n\n");
+		fprintf(TB, " : std_logic_vector(7 downto 0);\n\n\t");
 	}
 
+	fprintf(TB, "signal data_a, addr_a, q_a : std_logic_vector(7 downto 0);\n\tsignal we_a : std_logic;\n\n");
+
+	//Signals for the loop
+	fprintf(TB, "\tsignal max_cycles : integer := 5000;\n\tsignal cycle_count : integer := 1;\n\n");
+
 	//Architecture Processes
-	//Port map
-	fprintf(TB, "begin\n\tFSM : my_fsm port map (MEM_GNT => MEM_GNT, START => START, CLK => CLK, Y => Y, RD_RQ => RD_RQ, WR_RQ => WR_RQ");
+	//Port map for HA
+	fprintf(TB, "begin\n\n\t%s_HA : %s port map (CLK => CLK, MEM_RQ => MEM_RQ, MEM_GNT => MEM_GNT, START => START, ", entity, entity);
+	fprintf(TB, "PB_SLEEP => PB_SLEEP, ST_OUT => ST_OUT, RD_RQ => RD_RQ, WR_RQ => WR_RQ, ");
+	fprintf(TB, "ADDR => ADDR, DATA_IN => DATA_IN, DATA_OUT => DATA_OUT");
 
 	for (int i = 0; i < num_inputs; i++) {
 		fprintf(TB, ", %s => %s", inputs[i], inputs[i]);
@@ -514,29 +553,22 @@ void make_Testbench(FILE *TB, char *entity, int num_states, int num_inputs, int 
 	for (int i = 0; i < num_outputs; i++) {
 		fprintf(TB, ", %s => %s", outputs[i], outputs[i]);
 	}
-	fprintf(TB, ");\n\n\t");
+	fprintf(TB, ");\n\t");
+
+	//Port map for DPRAM
+	fprintf(TB, "MEM : dpram port map (data_a => data_a, data_b => DATA_OUT, addr_a => addr_a, addr_b => ADDR,");
+	fprintf(TB, "re_b => RD_RQ, we_a => we_a, we_b => WR_RQ, clk => CLK, q_a => q_a, q_b => DATA_IN);\n\n\t");
 
 	//CLK process
-	fprintf(TB, "CLK_ticks : process\n\tbegin\n\t\tloop\n\t\t\tCLK <= '1';\n\t\t\twait for 2.5 ns;\n\t\t\t");
-	fprintf(TB, "CLK <= '0';\n\t\t\twait for 2.5 ns;\n\t\tend loop;\n\tend process;\n\n\t");
+	fprintf(TB, "CLK_ticks : process\n\tbegin\n\t\twhile cycle_count < max_cycles loop\n\t\t\t");
+	fprintf(TB,"CLK <= '1';\n\t\t\twait for 2.5 ns;\n\t\t\t");
+	fprintf(TB, "CLK <= '0';\n\t\t\twait for 2.5 ns;\n\t\t\tcycle_count <= cycle_count + 1;\n\t\t");
+	fprintf(TB,"end loop;\n\tend process;\n\n\t");
 
-	//WAIT_SIG and RESET process
-	fprintf(TB, "Inputs: process\n\tbegin\n\t\tSTART <= '1' after 0 ns;\n\t\tMEM_GNT <= '0' after 0 ns,\n\t\t");
-	int interval = 10;
-	for (int i = 1; i < num_states + 1; i++) {
-		fprintf(TB, "'1' after %d ns,\n\t\t", interval);
-		interval += 10;
-		fprintf(TB, "'0' after %d ns", interval);
-		interval += 10;
-		if (i != num_states) {
-			fprintf(TB, ",\n\t\t");
-		} else {
-			fprintf(TB, ";\n\t\t");
-		}
-	}
-
-	//End of test assertion
-	fprintf(TB, "\n\t\tassert false report \"Reached end of text\";\n\t\twait;\n\n\tend process;\nend test;");
+	//MEM_GNT and START process
+	fprintf(TB, "Inputs: process\n\tbegin\n\t\tSTART <= '1' after 0 ns, '0' after 10 ns;\n\t\t");
+	fprintf(TB, "while cycle_count < max_cycles loop\n\t\t\tMEM_GNT <= '0';\n\t\t\twait for 10 ns;");
+	fprintf(TB, "\n\t\t\tMEM_GNT <= '1';\n\t\t\twait for 10 ns;\n\t\tend loop;\n\tend process;\nend test;");
 
 	fclose(TB);
 }

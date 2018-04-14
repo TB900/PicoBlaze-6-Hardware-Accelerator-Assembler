@@ -33,7 +33,9 @@ typedef enum instruction {
 	COMPARE,
 	COMPARECY,
 	TEST,
-	TESTCY
+	TESTCY,
+	LOOP,
+	END_LOOP
 } instruction;
 
 // Linked list structure

@@ -420,8 +420,8 @@ void ins_TEST(FILE *VHDL, char *op1, char *op2) {
 	fprintf(VHDL, "\t\t\t\t\tZERO := '1';\n\t\t\t\telse \n\t\t\t\t\tZERO := '0';\n\t\t\t\tend if;\n");
 
 	// Set CARRY flag if parity is odd
-	fprintf(VHDL, "\t\t\t\tif (XOR TMP = '1') then\n");
-	fprintf(VHDL, "\t\t\t\t\tCARRY := '1';\n\t\t\t\telse \n\t\t\t\t\tCARRY := '0';\n\t\t\t\tend if;\n\n");
+	fprintf(VHDL, "\t\t\t\tCARRY := TMP(7) XOR TMP(6) XOR TMP(5) XOR TMP(4)"); 
+	fprintf(VHDL, "XOR TMP(3) XOR TMP(2) XOR TMP(1) XOR TMP(0);\n\n");
 }
 
 void ins_TESTCY(FILE *VHDL, char *op1, char *op2) {
@@ -440,7 +440,32 @@ void ins_TESTCY(FILE *VHDL, char *op1, char *op2) {
 	fprintf(VHDL, "\t\t\t\tif (%s = \"00000000\" AND ZERO = '1') then\n", op1);
 	fprintf(VHDL, "\t\t\t\t\tZERO := '1';\n\t\t\t\telse \n\t\t\t\t\tZERO := '0';\n\t\t\t\tend if;\n");
 
-	// Set CARRY flag if parity is odd
-	fprintf(VHDL, "\t\t\t\tif (XOR TMP = '1' OR CARRY = '1') then\n");
-	fprintf(VHDL, "\t\t\t\t\tCARRY := '1';\n\t\t\t\telse \n\t\t\t\t\tCARRY := '0';\n\t\t\t\tend if;\n\n");
+	// Set CARRY flag if parity is odd and CARRY = 1
+	fprintf(VHDL, "\t\t\t\tTMP(8) := TMP(7) XOR TMP(6) XOR TMP(5) XOR TMP(4)");
+	fprintf(VHDL, "XOR TMP(3) XOR TMP(2) XOR TMP(1) XOR TMP(0);\n");
+	fprintf(VHDL, "\t\t\t\tCARRY := CARRY AND TMP(8);\n\n");
+}
+
+void ins_LOOP(FILE *VHDL, char *op1) {
+	// Instruction comment
+	fprintf(VHDL, "\t\t\t\t-- LOOP %s\n", op1);
+
+	// Create WHILE loop depending on what conditional is used
+	if (strcmp(op1, "C") == 0) {
+		fprintf(VHDL, "\t\t\t\twhile (CARRY = '1') loop\n\n");
+	} else if (strcmp(op1, "Z") == 0) {
+		fprintf(VHDL, "\t\t\t\twhile (ZERO = '1') loop\n\n");
+	} else if (strcmp(op1, "NC") == 0) {
+		fprintf(VHDL, "\t\t\t\twhile (CARRY = '0') loop\n\n");
+	} else {
+		fprintf(VHDL, "\t\t\t\twhile (ZERO = '0') loop\n\n");
+	}
+}
+
+void ins_END_LOOP(FILE *VHDL, char *op1) {
+	// Instruction comment
+	fprintf(VHDL, "\t\t\t\t-- END_LOOP %s\n", op1);
+
+	// End loop
+	fprintf(VHDL, "\t\t\t\tend loop;\n\n");
 }

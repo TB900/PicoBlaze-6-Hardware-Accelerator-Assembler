@@ -1,7 +1,2 @@
-﻿  parser.cpp
-  make_VHDL.cpp
-  main.cpp
-  instruction_templates.cpp
-  Generating Code...
+﻿  instruction_templates.cpp
   VHDL_FSM.vcxproj -> D:\My Documents\C++ Projects\VHDL_FSM\Debug\VHDL_FSM.exe
-  VHDL_FSM.vcxproj -> D:\My Documents\C++ Projects\VHDL_FSM\Debug\VHDL_FSM.pdb (Partial -> Full PDB)

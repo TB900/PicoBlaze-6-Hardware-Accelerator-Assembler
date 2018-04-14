@@ -1,13 +1,27 @@
 INPUT s0, 00
-FETCH s1, 01
-LOAD s2, 0F
-LOAD s3, 14
 
-AND s0, s0
-OR s1, s1
-XOR s2, s2
+LOAD s1, s0
+LOAD s2, s0
+SUB s2, 01
+
+LOOP Z
+
+ADD s0, s1
+SUB s2, 01
+
+END_LOOP Z
+
+ADD s0, 01
+LOAD s2, s0
+SUB s1, 01
+
+LOOP Z
+
+ADD s0, s2
+SUB s1, 01
+
+END_LOOP Z
+
+SRA s0
 
 OUTPUT s0, 05
-STORE s1, 06
-OUTPUT s2, 07
-STORE s3, 08

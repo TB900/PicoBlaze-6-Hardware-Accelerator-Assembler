@@ -1,8 +1,5 @@
 ﻿  instruction_templates.cpp
   main.cpp
+d:\my documents\c++ projects\vhdl_fsm\vhdl_fsm\main.h(9): fatal error C1083: Cannot open include file: 'stdafx.h': No such file or directory
   make_VHDL.cpp
   parser.cpp
-  Generating code
-  All 45 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
-  Finished generating code
-  VHDL_FSM.vcxproj -> D:\My Documents\C++ Projects\VHDL_FSM\Release\VHDL_FSM.exe
