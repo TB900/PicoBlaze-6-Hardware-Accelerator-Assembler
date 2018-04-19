@@ -75,7 +75,8 @@ begin
 	action_proc : process(PS)
 		variable s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, sA, sB, sC, sD, sE, sF : unsigned(7 downto 0);
 		variable TMP : unsigned(8 downto 0);
-		variable CARRY, ZERO : std_logic;
+		variable CARRY, ZERO : std_logic := '0';
+
 	begin
 		case (PS) is
 			when ST0 =>
@@ -91,8 +92,27 @@ begin
 					ZERO := '0';
 				end if;
 
-				-- ADD s0, 05
-				TMP := ('0' & s0) + x"05";
+				-- LOAD s1, s0
+				s1 := s0;
+
+				-- LOAD s2, s0
+				s2 := s0;
+
+				-- SUB s2, 01
+				TMP := ('0' & s2) - x"01";
+				s2 := TMP(7 downto 0);
+				CARRY := TMP(8);
+				if (s2 = "00000000") then
+					ZERO := '1';
+				else 
+					ZERO := '0';
+				end if;
+
+				-- LOOP Z
+				while (ZERO = '0') loop
+				
+				-- ADD s0, s1
+				TMP := ('0' & s0) + ('0' & s1);
 				s0 := TMP(7 downto 0);
 				CARRY := TMP(8);
 				if (s0 = "00000000") then
@@ -101,9 +121,81 @@ begin
 					ZERO := '0';
 				end if;
 
-				-- OUTPUT s0, 00
+				-- SUB s2, 01
+				TMP := ('0' & s2) - x"01";
+				s2 := TMP(7 downto 0);
+				CARRY := TMP(8);
+				if (s2 = "00000000") then
+					ZERO := '1';
+				else 
+					ZERO := '0';
+				end if;
+
+				-- END_LOOP Z
+				end loop;
+
+				-- ADD s0, 01
+				TMP := ('0' & s0) + x"01";
+				s0 := TMP(7 downto 0);
+				CARRY := TMP(8);
+				if (s0 = "00000000") then
+					ZERO := '1';
+				else 
+					ZERO := '0';
+				end if;
+
+				-- LOAD s2, s0
+				s2 := s0;
+
+				-- SUB s1, 01
+				TMP := ('0' & s1) - x"01";
+				s1 := TMP(7 downto 0);
+				CARRY := TMP(8);
+				if (s1 = "00000000") then
+					ZERO := '1';
+				else 
+					ZERO := '0';
+				end if;
+
+				-- LOOP Z
+				while (ZERO = '0') loop
+				
+				-- ADD s0, s2
+				TMP := ('0' & s0) + ('0' & s2);
+				s0 := TMP(7 downto 0);
+				CARRY := TMP(8);
+				if (s0 = "00000000") then
+					ZERO := '1';
+				else 
+					ZERO := '0';
+				end if;
+
+				-- SUB s1, 01
+				TMP := ('0' & s1) - x"01";
+				s1 := TMP(7 downto 0);
+				CARRY := TMP(8);
+				if (s1 = "00000000") then
+					ZERO := '1';
+				else 
+					ZERO := '0';
+				end if;
+
+				-- END_LOOP Z
+				end loop;
+
+				-- SRA s0
+				TMP := CARRY & s0;
+				s0 := TMP(8 downto 1);
+				CARRY := TMP(0);
+				if (s0 = "00000000") then
+					ZERO := '1';
+				else 
+					ZERO := '0';
+				end if;
+
+				-- OUTPUT s0, 05
 			when WS1 =>
-				ADDR <= x"00";
+				ADDR <= x"05";
 				DATA_OUT <= std_logic_vector(s0);
 
 			when ST_END =>

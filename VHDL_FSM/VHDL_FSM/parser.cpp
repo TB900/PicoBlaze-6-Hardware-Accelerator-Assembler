@@ -7,7 +7,7 @@
 
 // Corresponding table of instructions for instruction enumerables
 char *instable[] = { "ADD", "STORE", "FETCH", "SL0", "INPUT", "OUTPUT", "SL1", "SLA", "SLX", "SR0", "SR1", "SRA", 
-"SRX", "RL", "RR", "ADDCY", "SUB", "SUBCY", "AND", "OR", "XOR", "LOAD", "COMPARE", "COMPARECY", "TEST", "TESTCY", NULL };
+"SRX", "RL", "RR", "ADDCY", "SUB", "SUBCY", "AND", "OR", "XOR", "LOAD", "COMPARE", "COMPARECY", "TEST", "TESTCY", "LOOP", "END_LOOP", NULL };
  
 //Operator ++ defintion for the instruction enumerables
 instruction& operator++(instruction& p) {
@@ -37,7 +37,9 @@ instruction& operator++(instruction& p) {
 		case(COMPARE): p = COMPARECY; break;
 		case(COMPARECY): p = TEST; break;
 		case(TEST): p = TESTCY; break;
-		case(TESTCY): p = ADD; break;
+		case(TESTCY): p = LOOP; break;
+		case(LOOP): p = END_LOOP; break;
+		case(END_LOOP): p = ADD; break;
 	}
 	return p;
 }
@@ -62,12 +64,6 @@ If they are valid, continue */
 static int check_operands(dataflow **line, int line_num) {
 	dataflow *check_line = *line;
 
-	// Is the first operand empty? If so, return an error and exit
-	if (strcmp(check_line->op1, "") == 0) {
-		fprintf(stderr, "Error: Instruction on line %i is invalid (error in operand 1)!\n", line_num);
-		exit(-1);
-	}
-
 	// Checks whether the operands are valid based on the instruction enumerable within the node.
 	switch (check_line->ins) {
 		case(ADD):
@@ -86,16 +82,20 @@ static int check_operands(dataflow **line, int line_num) {
 		case(COMPARECY):
 		case(TEST):
 		case(TESTCY):
-			
-			/* Case statement for all 2 operand instructions
-			Already know the inputted operands are valid as they comply with the regular expression
-			Checks whether the second operand is empty. If so, return an error and exit
-			Else the operators are valid */
-			if (strcmp(check_line->op2, "") != 0) {
-				return 0;
-			} else {
-				fprintf(stderr, "Error: Instruction %s on line %i has no second operand!\n", instable[check_line->ins], line_num);
+
+		/* Case statement for all 2 operand instructions without conditionals:
+		Check that the first operand is a valid register and not a conditional
+		Check that the second operand isn't empty (will contain valid value due to the reguar expression if non-empty)
+		Either of these checks fail, then a specific error is returned
+		Otherwise the instruction is valid */
+			if (strncmp(check_line->op1, "s", 1) != 0) {
+				fprintf(stderr, "Error: Instruction %s on line %i has an invalid first operand!\n", instable[check_line->ins], line_num);
 				exit(-1);
+			} else if (strcmp(check_line->op2, "") == 0) {
+				fprintf(stderr, "Error: Instruction %s on line %i has no second operand (or is not capitlised)!\n", instable[check_line->ins], line_num);
+				exit(-1);
+			} else {
+				return 0;
 			}
 
 		case(SL0):
@@ -109,16 +109,39 @@ static int check_operands(dataflow **line, int line_num) {
 		case(RL):
 		case(RR):
 
-			/* Case statement for all 1 operand instructions 
-			Checks whether the second operand is not empty, If so return an error and exit
-			Else the operator is valid */
-			if (strcmp(check_line->op2, "") == 0) {
-				return 0;
-			} else {
+			/* Case statement for all 1 operand instructions without conditionals
+			Checks whether the first operand is a valid register and not a conditional
+			Check the second operand is empty
+			Either of these checks fail, then a specific error is returned
+			Otherwise the instruction is valid */
+			if (strncmp(check_line->op1, "s", 1) != 0) {
+				fprintf(stderr, "Error: Instruction %s on line %i has an invalid operand!\n", instable[check_line->ins], line_num);
+				exit(-1);
+			} else if (strcmp(check_line->op2, "") != 0) {
 				fprintf(stderr, "Error: Instruction %s on line %i has an extra operand!\n", instable[check_line->ins], line_num);
 				exit(-1);
+			} else {
+				return 0;
 			}
 		
+		case(LOOP):
+		case(END_LOOP):
+
+			/* Case statement for all 1 operand conditional instructions 
+			Checks whether the first operand is not a register (due to the regular expression, if doesn't start with an s, it must be a conditional)
+			Checks whether the second operand is empty
+			Either of these checks fail, then a specific error is returned
+			Otherwise the instruction is valid */
+			if (strncmp(check_line->op1, "s", 1) == 0) {
+				fprintf(stderr, "Error: Instruction %s on line %i has a register for it's first operand!\n", instable[check_line->ins], line_num);
+				exit(-1);
+			} else if (strcmp(check_line->op2, "") != 0) {
+				fprintf(stderr, "Error: Instruction %s on line %i has a second operand!\n", instable[check_line->ins], line_num);
+				exit(-1);
+			} else {
+				return 0;
+			}
+
 		// The program should never reach this point but is left as a failsafe
 		default:
 			fprintf(stderr, "Error: Something has gone terribly wrong when checking the operands on the instruction on line %i!\n", line_num);
@@ -159,12 +182,22 @@ static int match_regex(regex_t *r, const char *to_match, dataflow **assembly, in
 	current->state = state_num;
 	current->next = NULL;
 
+	// An int which checks the line has been through the matching process
+	int check_matching = 0;
+
 	while (1) {
 		int i = 0;
 		int nomatch = regexec(r, prev_match, n_matches, matches, 0);
 
 		// When no matches found with inputted string
 		if (nomatch) {
+
+			// Check whether any matches were found
+			if (check_matching == 0) {
+				fprintf(stderr, "Error: Syntax error on line %i (check the instruction is capitalised and the first operand is a condtional or register)!\n", line_num);
+				exit(-1);
+			}
+
 			// Check whether operands are valid
 			check_operands(&current, line_num);
 
@@ -185,6 +218,9 @@ static int match_regex(regex_t *r, const char *to_match, dataflow **assembly, in
 		for (i = 0; i < n_matches; i++) {
 			int start; // Pointer to start of capturing group sub-match within instruction
 			int finish; // Pointer to end of capturing group sub-match within instruction
+
+			// The line has been in the matching process
+			check_matching = 1;
 
 			if (matches[i].rm_so == -1) {
 				break;
@@ -239,8 +275,8 @@ void parse_assembly (char *assembly_file, dataflow **assembly, int *num_ST, inst
 	
 	// Regular expression for Picoblaze assembly is created and compiled
 	// ([A-Z0-1]+)[ ]+([s][0-9|A-F])([, ])*([s][0-9|A-F]|[0-9A-F]{2})?
-	assembly_reg_expr = "([A-Z0-1]+)[ ]+([s][0-9|A-F]|[CZ]{1}|[N][CZ])([, ])*([s][0-9|A-F]|[0-9A-F]{2})?";
-	comp = regcomp(&reg_expr, assembly_reg_expr, REG_EXTENDED | REG_NEWLINE);
+	assembly_reg_expr = "([A-Z_0-1]+)[ ]+([s][0-9|A-F]|[CZ]{1}|[N][CZ])([, ])*([s][0-9|A-F]|[0-9A-F]{2})?";
+	comp = regcomp(&reg_expr, assembly_reg_expr, REG_EXTENDED); // | REG_NEWLINE
 
 	// Checks whether the regular expression is invalid
 	if (comp != 0) {
@@ -261,14 +297,40 @@ void parse_assembly (char *assembly_file, dataflow **assembly, int *num_ST, inst
 	}
 
 	// Iterate to end of dataflow linked list to get the end node whilst getting the last mem instruction
+	// Check that all loops have been closed
 	dataflow *end_node = *assembly;
+	int open_loop = 0;
 	while (end_node->next != NULL) {
 		end_node = end_node->next;
 
+		// Increment the open loop count if it is a loop instruction
+		if (end_node->ins == LOOP) {
+			open_loop++;
+
+		// Decrement the open loop count if it is an end loop instruction
+		} else if (end_node->ins == END_LOOP) {
+			open_loop--;
+
 		// Store the instruction if it is a memory instruction
-		if (end_node->ins == FETCH || end_node->ins == STORE || end_node->ins == INPUT || end_node->ins == OUTPUT) {
-			*last_ins = end_node->ins;
+		} else if (end_node->ins == FETCH || end_node->ins == STORE || end_node->ins == INPUT || end_node->ins == OUTPUT) {
+			
+			// Check the memory instruction isn't contained within a loop
+			if (open_loop == 0) {
+				*last_ins = end_node->ins;
+			} else {
+				fprintf(stderr, "Error: A memory instruction (%s) is located within a loop! Memory instructions are currently not supported in loops!\n", instable[end_node->ins]);
+				exit(-1);
+			}
 		}
+	}
+
+	// Check there are no open loops
+	if (open_loop > 0) {
+		fprintf(stderr, "Error: There is %i open loop/s within your code! Please check all loops are terminated!\n", open_loop);
+		exit(-1);
+	} else if (open_loop < 0) {
+		fprintf(stderr, "Error: There is %i open loop/s within your code! Please check all loops are initialised!\n", abs(open_loop));
+		exit(-1);
 	}
 
 	// Get the number of states required for the state machine from the final node

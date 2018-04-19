@@ -110,7 +110,7 @@ static void action_Proc(FILE *VHDL, dataflow **assembly, char states[1000][10], 
 
 	fprintf(VHDL, "\t\t\twhen %s =>\n", states[current_state]);
 
-	// While the current instruction isn't NULL
+	// While the current instruction isn't NULL, add the template for the current instruction to the VHDL
 	while (current_ins->next != NULL) {
 		current_ins = current_ins->next;
 
@@ -221,6 +221,14 @@ static void action_Proc(FILE *VHDL, dataflow **assembly, char states[1000][10], 
 
 			case(TESTCY):
 				ins_TESTCY(VHDL, current_ins->op1, current_ins->op2);
+				break;
+
+			case(LOOP):
+				ins_LOOP(VHDL, current_ins->op1);
+				break;
+
+			case(END_LOOP):
+				ins_END_LOOP(VHDL, current_ins->op1);
 				break;
 		}
 	}
@@ -393,7 +401,7 @@ int make_VHDL(FILE *VHDL, char *entity, int num_states, int pb_sleep, int num_in
 
 	// ACTION process variable initialisation and begin case for PS
 	fprintf(VHDL, "\taction_proc : process(PS)\n\t\tvariable s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, sA, sB, sC, sD, sE, sF : unsigned(7 downto 0);");
-	fprintf(VHDL, "\n\t\tvariable TMP : unsigned(8 downto 0);\n\t\tvariable CARRY, ZERO : std_logic;\n\tbegin\n\t\tcase (PS) is\n");
+	fprintf(VHDL, "\n\t\tvariable TMP : unsigned(8 downto 0);\n\t\tvariable CARRY, ZERO : std_logic := '0';\n\n\tbegin\n\t\tcase (PS) is\n");
 
 	// Create each case for PS
 	action_Proc(VHDL, assembly, states, len_of_states);
@@ -536,7 +544,7 @@ void make_Testbench(FILE *TB, char *entity, int num_states, int num_inputs, int 
 	//Architecture Processes
 	//Port map for HA
 	fprintf(TB, "begin\n\n\t%s_HA : %s port map (CLK => CLK, MEM_RQ => MEM_RQ, MEM_GNT => MEM_GNT, START => START, ", entity, entity);
-	fprintf(TB, "PB_SLEEP => PB_SLEEP, ST_OUT => ST_OUT, RD_RQ => RD_RQ, WR_RQ => WR_RQ");
+	fprintf(TB, "PB_SLEEP => PB_SLEEP, ST_OUT => ST_OUT, RD_RQ => RD_RQ, WR_RQ => WR_RQ, ");
 	fprintf(TB, "ADDR => ADDR, DATA_IN => DATA_IN, DATA_OUT => DATA_OUT");
 
 	for (int i = 0; i < num_inputs; i++) {
@@ -559,8 +567,8 @@ void make_Testbench(FILE *TB, char *entity, int num_states, int num_inputs, int 
 
 	//MEM_GNT and START process
 	fprintf(TB, "Inputs: process\n\tbegin\n\t\tSTART <= '1' after 0 ns, '0' after 10 ns;\n\t\t");
-	fprintf(TB, "while cycle_count < max_cycles loop\n\t\t\tMEM_GNT <= '1';\n\t\t\twait for 5ns;");
-	fprintf(TB, "\n\t\t\tMEM_GNT <= '0';\n\t\t\twait for 5ns;\n\t\tend loop;\n\tend process;\nend test;");
+	fprintf(TB, "while cycle_count < max_cycles loop\n\t\t\tMEM_GNT <= '0';\n\t\t\twait for 10 ns;");
+	fprintf(TB, "\n\t\t\tMEM_GNT <= '1';\n\t\t\twait for 10 ns;\n\t\tend loop;\n\tend process;\nend test;");
 
 	fclose(TB);
 }

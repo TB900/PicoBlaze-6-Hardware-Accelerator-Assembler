@@ -30,5 +30,7 @@ void ins_COMPARE(FILE *VHDL, char *op1, char *op2);
 void ins_COMPARECY(FILE *VHDL, char *op1, char *op2);
 void ins_TEST(FILE *VHDL, char *op1, char *op2);
 void ins_TESTCY(FILE *VHDL, char *op1, char *op2);
+void ins_LOOP(FILE *VHDL, char *op1);
+void ins_END_LOOP(FILE *VHDL, char *op1);
 
 #endif

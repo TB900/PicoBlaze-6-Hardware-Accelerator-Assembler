@@ -37,7 +37,7 @@ architecture test of HACC_tb is
 
 begin
 
-	HACC_HA : HACC port map (CLK => CLK, MEM_RQ => MEM_RQ, MEM_GNT => MEM_GNT, START => START, PB_SLEEP => PB_SLEEP, ST_OUT => ST_OUT, RD_RQ => RD_RQ, WR_RQ => WR_RQADDR => ADDR, DATA_IN => DATA_IN, DATA_OUT => DATA_OUT);
+	HACC_HA : HACC port map (CLK => CLK, MEM_RQ => MEM_RQ, MEM_GNT => MEM_GNT, START => START, PB_SLEEP => PB_SLEEP, ST_OUT => ST_OUT, RD_RQ => RD_RQ, WR_RQ => WR_RQ, ADDR => ADDR, DATA_IN => DATA_IN, DATA_OUT => DATA_OUT);
 	MEM : dpram port map (data_a => data_a, data_b => DATA_OUT, addr_a => addr_a, addr_b => ADDR,re_b => RD_RQ, we_a => we_a, we_b => WR_RQ, clk => CLK, q_a => q_a, q_b => DATA_IN);
 
 	CLK_ticks : process
@@ -55,10 +55,10 @@ begin
 	begin
 		START <= '1' after 0 ns, '0' after 10 ns;
 		while cycle_count < max_cycles loop
-			MEM_GNT <= '1';
-			wait for 5ns;
 			MEM_GNT <= '0';
-			wait for 5ns;
+			wait for 10 ns;
+			MEM_GNT <= '1';
+			wait for 10 ns;
 		end loop;
 	end process;
 end test;
